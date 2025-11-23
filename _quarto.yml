@@ -1,0 +1,9 @@
+project:
+  type: website
+  output-dir: _site
+
+format:
+  html:
+    theme: cosmo
+    toc: true          
+    toc-location: right  
