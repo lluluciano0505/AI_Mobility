@@ -177,12 +177,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"lens of POI"</span>, <span class="bu">len</span>(poi_cols))</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"5 poi:"</span>, poi_cols[:<span class="dv">5</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="image/001.png" class="img-fluid figure-img"></p>
-<figcaption>table</figcaption>
-</figure>
-</div>
+<p><img src="image/001.png" class="img-fluid"></p>
 </section>
 <section id="building-the-modeling-table-flow_feat" class="level4">
 <h4 class="anchored" data-anchor-id="building-the-modeling-table-flow_feat">1.2 Building the modeling table <code>flow_feat</code></h4>
@@ -247,12 +242,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(con.execute(<span class="st">"SELECT COUNT(*) FROM flow_feat;"</span>).fetchall())</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(con.execute(<span class="st">"PRAGMA table_info('flow_feat');"</span>).fetchall()[:<span class="dv">15</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="image/005.png" class="img-fluid figure-img"></p>
-<figcaption>table</figcaption>
-</figure>
-</div>
+<p><img src="image/005.png" class="img-fluid"></p>
 </section>
 </section>
 <section id="traintest-split-and-feature-normalization" class="level3">
@@ -597,12 +587,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Saved linear baseline model."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="image/006.png" class="img-fluid figure-img"></p>
-<figcaption>table</figcaption>
-</figure>
-</div>
+<p><img src="image/006.png" class="img-fluid"></p>
 <div id="cell-24" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="fdb640ff-5553-4940-9320-af3d1a706229">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -684,12 +669,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a>torch.save(model.state_dict(), final_path)</span>
 <span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Saved final model to </span><span class="sc">{</span>final_path<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="image/007.png" class="img-fluid figure-img"></p>
-<figcaption>table</figcaption>
-</figure>
-</div>
+<p><img src="image/007.png" class="img-fluid"></p>
 </section>
 <section id="spatial-visualization" class="level3">
 <h3 class="anchored" data-anchor-id="spatial-visualization">6. Spatial visualization</h3>
@@ -752,12 +732,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"cells at this time step:"</span>, <span class="bu">len</span>(snap_true))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="image/004.png" class="img-fluid figure-img"></p>
-<figcaption>table</figcaption>
-</figure>
-</div>
+<p><img src="image/004.png" class="img-fluid"></p>
 <div id="cell-30" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="8a220176-9fe2-434a-d196-35e427b6973d">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>X_list, target_list, x_list, y_list <span class="op">=</span> [], [], [], []</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -875,12 +850,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
 <span id="cb16-62"><a href="#cb16-62" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="image/002.png" class="img-fluid figure-img"></p>
-<figcaption>table</figcaption>
-</figure>
-</div>
+<p><img src="image/002.png" class="img-fluid"></p>
 <ol start="2" type="1">
 <li><strong>Multiple time slices</strong>
 <ul>
@@ -1056,12 +1026,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb18-84"><a href="#cb18-84" aria-hidden="true" tabindex="-1"></a>plt.suptitle(<span class="ss">f"Day </span><span class="sc">{</span>d0<span class="sc">}</span><span class="ss"> – 6 time steps: True / Pred / Error"</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
 <span id="cb18-85"><a href="#cb18-85" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="image/003.png" class="img-fluid figure-img"></p>
-<figcaption>table</figcaption>
-</figure>
-</div>
+<p><img src="image/003.png" class="img-fluid"></p>
 </section>
 <section id="conclusion" class="level3">
 <h3 class="anchored" data-anchor-id="conclusion">Conclusion</h3>
