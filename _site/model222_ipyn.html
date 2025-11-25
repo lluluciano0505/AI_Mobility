@@ -120,7 +120,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#data-and-feature-construction" id="toc-data-and-feature-construction" class="nav-link active" data-scroll-target="#data-and-feature-construction">1. Data and feature construction</a></li>
   <li><a href="#traintest-split-and-feature-normalization" id="toc-traintest-split-and-feature-normalization" class="nav-link" data-scroll-target="#traintest-split-and-feature-normalization">2. Train–test split and feature normalization</a></li>
-  <li><a href="#sequence-construction" id="toc-sequence-construction" class="nav-link" data-scroll-target="#sequence-construction">3. Sequence construction</a></li>
+  <li><a href="#sequence-construction" id="toc-sequence-construction" class="nav-link" data-scroll-target="#sequence-construction">3. Sequence Construction</a></li>
   <li><a href="#models" id="toc-models" class="nav-link" data-scroll-target="#models">4. Models</a></li>
   <li><a href="#training" id="toc-training" class="nav-link" data-scroll-target="#training">5. Training</a></li>
   <li><a href="#spatial-visualization" id="toc-spatial-visualization" class="nav-link" data-scroll-target="#spatial-visualization">6. Spatial visualization</a></li>
@@ -167,7 +167,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="inspecting-the-base-table" class="level4">
 <h4 class="anchored" data-anchor-id="inspecting-the-base-table">1.1 Inspecting the base table</h4>
 <p>We begin by examining the DuckDB database to understand the structure of the input data. First, we list all available tables and confirm that the base table <code>flow_poi</code> is present. We then query the schema of <code>flow_poi</code> to obtain the names of all its columns.</p>
-<p>From these column names, we automatically extract all features whose names start with <code>poi_</code>. These <code>poi_*</code> columns represent POI-based attributes for each grid cell (for example, counts of different POI types). Collecting them programmatically avoids hard-coding a long list of POI fields.</p>
+<p>From these columns, we automatically select all fields whose names start with poi_. These poi_* columns describe the point-of-interest (POI) environment of each grid cell, for example the number of food, shopping, or entertainment locations nearby. Taken together, they form a POI feature vector: each element is the intensity of one POI category, giving a compact numerical representation of the local urban context.</p>
 <p>Finally, we define a consistent feature ordering for later use in NumPy and PyTorch. The feature list starts with the current <code>flow</code> value, followed by all <code>poi_*</code> columns, and ends with four time-encoding features that we will add next: <code>tod_sin</code>, <code>tod_cos</code>, <code>dow_sin</code>, and <code>dow_cos</code>.</p>
 <div id="cell-5" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="c842b1f0-3ad8-4d61-a803-867e6ab14c66">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>info <span class="op">=</span> con.execute(<span class="st">"PRAGMA table_info('flow_poi');"</span>).fetchall()</span>
@@ -247,15 +247,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="traintest-split-and-feature-normalization" class="level3">
 <h3 class="anchored" data-anchor-id="traintest-split-and-feature-normalization">2. Train–test split and feature normalization</h3>
-<p>To prepare the data for modeling, we perform a temporal split on the feature table <code>flow_feat</code>. Because mobility patterns evolve over time, the model should be evaluated on future data rather than on randomly shuffled samples. We therefore split the dataset by the global <code>time_index</code>:</p>
+<p>To prepare the data for modeling, we perform a temporal split on the feature table flow_feat. Because mobility patterns evolve over time, the model should be evaluated on future data rather than on randomly shuffled samples. We therefore split the dataset by the global time_index:</p>
 <ol type="1">
-<li>We compute the 80th percentile of <code>time_index</code> across all rows.</li>
-<li>Rows with <code>time_index</code> ≤ threshold form the training set (<code>flow_feat_train</code>).</li>
-<li>Rows with <code>time_index</code> &gt; threshold form the test set (<code>flow_feat_test</code>).</li>
+<li>We compute the 80th percentile of time_index across all rows.</li>
+<li>Rows with time_index ≤ threshold form the training set (flow_feat_train).</li>
+<li>Rows with time_index &gt; threshold form the test set (flow_feat_test).</li>
 </ol>
 <p>This ensures that the model is trained only on past observations and evaluated on genuinely later time periods.</p>
-<p>After splitting, we compute feature-wise means and standard deviations <strong>only on the training set</strong>. These statistics are collected for each model input feature in <code>feature_cols</code>. They are later used to apply z-score normalization to both training and test sequences. Computing normalization parameters solely from the training set avoids information leakage from the future into the model.</p>
-<p>The resulting arrays <code>mean</code> and <code>std</code> store the normalization parameters in a consistent order that matches the feature layout used by NumPy and PyTorch.</p>
+<p>After splitting, we compute feature-wise means and standard deviations <strong>only on the training set</strong>. These statistics are collected for each model input feature in feature_cols. They are later used to apply z-score normalization to both training and test sequences. Computing normalization parameters solely from the training set avoids information leakage from the future into the model.</p>
+<p>The resulting arrays mean and std store the normalization parameters in a consistent order that matches the feature layout used by NumPy and PyTorch.</p>
 <div id="cell-12" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:139,&quot;referenced_widgets&quot;:[&quot;c3237904e88c495fb6b7a5cbc0eb8250&quot;,&quot;c65e99c1a08442bbac7f55982bfa2fce&quot;,&quot;c24fc8161f9d4cce9d68742e88fb3557&quot;,&quot;3167a68725e540f0af32f451355cfc6c&quot;,&quot;20cd043dda8e4005a3dca3dc9ba9f124&quot;,&quot;8a6a0dc81bfa434a881836b2573748c7&quot;,&quot;1e8904910b4c434092dbe95e446c6f61&quot;,&quot;c937d5ff2bbb45a797463a32bf209f93&quot;,&quot;16a0aa33eb94474da5adb27911544b02&quot;,&quot;db8c32a1000847a79632f36831d88430&quot;,&quot;edc51a08a0b74ae387c84b7822eb5ea2&quot;,&quot;08add841df264cdab83e0e1c339694ae&quot;]}}" data-outputid="c10773a1-bc64-45a6-e28f-9755e5a4059f">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 80% threshold</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -292,20 +292,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 <section id="sequence-construction" class="level3">
-<h3 class="anchored" data-anchor-id="sequence-construction">3. Sequence construction</h3>
-<p>To train temporal models, we convert the flat table <code>flow_feat</code> into short, fixed-length sequences for each grid cell. These sequences represent a brief history of recent observations, followed by the flow value that occurs immediately afterward.</p>
-<p>The construction process works cell by cell. For each table (<code>flow_feat_train</code> or <code>flow_feat_test</code>), we first identify every grid cell that contains at least <code>SEQ_LEN</code> time steps. For each eligible cell, we retrieve all of its records ordered by the global <code>time_index</code> so that the time series is consistent and gap-free.</p>
-<p>From this ordered sequence, we slide a window of length <code>SEQ_LEN</code> over the cell’s history. The window moves forward by a fixed stride (e.g., 4 time steps) to avoid generating overly similar samples. Each window contains:</p>
-<ul>
-<li>a sequence of <code>SEQ_LEN</code> standardized feature vectors, representing the cell’s recent historical states;</li>
-<li>a target value equal to the <code>flow_next</code> associated with the <strong>final</strong> time step inside that window.</li>
-</ul>
-<p>In other words, every training example describes “the previous eight half-hours” and pairs it with “the flow in the next half-hour.” The generator bundles these examples into mini-batches:</p>
-<ul>
-<li><code>X_batch</code> has shape <code>[batch_size, SEQ_LEN, feature_dim]</code>, containing the input histories;</li>
-<li><code>y_batch</code> has shape <code>[batch_size]</code>, containing the corresponding next-step flow targets.</li>
-</ul>
-<p>These mini-batches form the direct input to both the linear model and the LSTM model during training and evaluation.</p>
+<h3 class="anchored" data-anchor-id="sequence-construction">3. Sequence Construction</h3>
+<p>Training sequences are constructed using three hyperparameters: SEQ_LEN = 8, STRIDE = 4, and BATCH_SIZE = 1024. With SEQ_LEN = 8, each sample consists of the most recent eight half-hour observations for a given grid cell, corresponding to a 4-hour historical window. A STRIDE of 4 shifts the sliding window forward by four time steps (two hours), preventing consecutive samples from being nearly identical. BATCH_SIZE = 1024 determines how many sequences are processed together in each mini-batch, providing a balance between computational efficiency and training stability.</p>
+<p>Sequence generation begins from the tables flow_feat_train and flow_feat_test, with sequences built independently for each grid cell (x,y). Only cells appearing at least eight times are retained, ensuring that a full sequence of length SEQ_LEN is available. For each eligible cell, its rows are sorted by the global time_index to form an ordered time series. The columns listed in feature_cols are then extracted and standardized using the mean and standard deviation from the training set, placing all features on a comparable scale.</p>
+<p>A fixed-length sliding window of size 8 is applied to each standardized cell-level time series, with window start positions at i=0,4,8,…, reflecting the chosen stride. Each window produces an input sequence consisting of eight consecutive half-hour records, and the prediction target is defined as the flow_next value associated with the final row in the window. Conceptually, each training example captures a 4-hour history and asks the model to predict the flow in the subsequent half-hour.</p>
+<p>All resulting examples are grouped into mini-batches of size 1024. Each batch tensor X_batch has shape [1024,8,feature_dim], containing 1024 standardized sequences of length 8. The corresponding target vector y_batch has shape [1024], holding the next-step flow values. Both the linear baseline model and the LSTM model consume the same batch format during training and evaluation, meaning that any performance differences arise solely from how the two architectures interpret the same sequence input.</p>
 <div id="cell-14" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
@@ -474,15 +465,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="training" class="level3">
 <h3 class="anchored" data-anchor-id="training">5. Training</h3>
-<p>Both the LSTM model and the linear baseline model are trained using the mini-batches produced by the sequence generator. Each batch contains a set of short historical sequences for different grid cells, paired with the flow value that occurs immediately afterward.</p>
-<p>During training, the model loops over all batches from <code>flow_feat_train</code>. For each batch:</p>
-<ol type="1">
-<li>The input sequences are passed through the model to obtain predictions of the next-step flow.</li>
-<li>These predictions are compared with the true targets using mean squared error as the loss function.</li>
-<li>The optimizer (Adam) updates the model parameters to reduce this loss.</li>
-</ol>
-<p>This process is repeated for several epochs. After each epoch, the model is evaluated on <code>flow_feat_test</code> using the same sequence construction procedure. The test-set mean squared error provides a forward-looking measure of performance, since the test rows correspond to later time periods that were not used during training.</p>
-<p>For the LSTM model, training checkpoints are saved after each epoch, including the model parameters, optimizer state, and the current training and test metrics. A final set of model weights is also saved separately for inference and visualization.</p>
+<section id="linear-baseline-model" class="level4">
+<h4 class="anchored" data-anchor-id="linear-baseline-model">5.1 Linear baseline model</h4>
+<p>The linear baseline model LinearSeqModel is a simple fully connected regressor that ignores temporal order within the input sequence. Each input batch X_batch initially has shape [B, L, F], where B is the batch size, L = SEQ_LEN is the number of time steps, and F is the feature dimension. Before feeding the data into the model, the tensor is reshaped to [B, L * F], so that all time steps in the sequence are concatenated into a single flat feature vector.</p>
+<p>The model consists of one linear layer nn.Linear(input_dim * seq_len, 1) that maps this flattened sequence to a single scalar prediction. Training uses the Adam optimizer with a learning rate of 1e-3 and mean squared error (MSE) as the loss function. For each epoch, the code iterates over all sequence batches generated from the flow_feat_train table, performs forward and backward passes, and updates the model parameters. The training loop also accumulates the sum of squared errors to compute the training MSE.</p>
+<p>After each epoch, the helper function evaluate_mse_linear is called on the flow_feat_test table to compute the test MSE using the same batching logic. This function runs the model in evaluation mode, iterates over all test batches, and returns the average squared error across all samples. Finally, the trained linear model weights are saved to flow_linear_seq_epoch8.pth as the linear baseline checkpoint.</p>
 <div id="cell-22" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="11dfb98f-78ad-49c3-a892-40ce212405b6">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> nn</span>
@@ -588,7 +575,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Saved linear baseline model."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><img src="image/006.png" class="img-fluid"></p>
-<div id="cell-24" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="fdb640ff-5553-4940-9320-af3d1a706229">
+</section>
+<section id="lstm-training-and-checkpointing" class="level4">
+<h4 class="anchored" data-anchor-id="lstm-training-and-checkpointing">5.2 LSTM training and checkpointing</h4>
+<p>The second training loop trains the LSTM-based sequence model defined earlier in the notebook. In contrast to the linear baseline, the LSTM takes input batches of shape [B, L, F] directly and processes the sequence along the time dimension, maintaining a hidden state to capture temporal dependencies.</p>
+<p>The helper function evaluate_mse_seq mirrors the linear evaluation function, but it calls the sequence model directly on tensors of shape [B, L, F] without flattening. It runs the model in evaluation mode, iterates over all batches from the specified DuckDB table, and returns the mean squared error over all samples.</p>
+<p>The main training loop runs for EPOCHS = 8. For each epoch, the model is set to training mode, and batches are drawn from the flow_feat_train table using seq_batch_generator. For every batch, the code moves the data to the selected device (CPU or GPU), performs a forward pass through the LSTM, computes the MSE loss, backpropagates the gradients, and updates the parameters with the chosen optimizer. The loop accumulates the sum of squared errors to compute the epoch-level training MSE, and every 100 batches it prints a progress message.</p>
+<p>At the end of each epoch, evaluate_mse_seq is called on the flow_feat_test table to obtain the test MSE. The code then saves a checkpoint file under checkpoints_lstm/, containing the current epoch index, the model and optimizer state dictionaries, and the train/test MSE values. This allows intermediate models to be restored later if needed. After the final epoch, the model’s state dictionary is also saved separately to flow_lstm_final.pth as the final LSTM checkpoint.</p>
+<div id="cell-25" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="fdb640ff-5553-4940-9320-af3d1a706229">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># checkpoint</span></span>
@@ -671,6 +665,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><img src="image/007.png" class="img-fluid"></p>
 </section>
+</section>
 <section id="spatial-visualization" class="level3">
 <h3 class="anchored" data-anchor-id="spatial-visualization">6. Spatial visualization</h3>
 <p>To understand where and when the models perform well, we visualize predictions across the spatial grid. The idea is to fix a specific day and one or more time-of-day slots, reconstruct the historical sequences for each grid cell at those times, run the trained model, and compare its predictions with the true flows.</p>
@@ -689,7 +684,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 </ul></li>
 </ol>
-<div id="cell-27" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="22827492-36ff-4a93-ee67-21e047555b19">
+<div id="cell-28" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="22827492-36ff-4a93-ee67-21e047555b19">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>d0 <span class="op">=</span> <span class="dv">64</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
@@ -712,7 +707,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(window_df.head())</span>
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"records have ="</span>, <span class="bu">len</span>(window_df))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-28" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="0c33ada2-4767-42f9-b615-7cbb60f19c07">
+<div id="cell-29" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="0c33ada2-4767-42f9-b615-7cbb60f19c07">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -733,7 +728,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"cells at this time step:"</span>, <span class="bu">len</span>(snap_true))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><img src="image/004.png" class="img-fluid"></p>
-<div id="cell-30" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="8a220176-9fe2-434a-d196-35e427b6973d">
+<div id="cell-31" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="8a220176-9fe2-434a-d196-35e427b6973d">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>X_list, target_list, x_list, y_list <span class="op">=</span> [], [], [], []</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> idx, row <span class="kw">in</span> snap_true.iterrows():</span>
@@ -777,7 +772,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>    xb <span class="op">=</span> torch.from_numpy(X).to(device)     <span class="co"># [N, L, F]</span></span>
 <span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>    pred_arr <span class="op">=</span> model(xb).cpu().numpy()      <span class="co"># [N]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-31" class="cell">
+<div id="cell-32" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>snap <span class="op">=</span> pd.DataFrame({</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"x"</span>: x_list,</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"y"</span>: y_list,</span>
@@ -786,7 +781,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>snap[<span class="st">"err_abs"</span>] <span class="op">=</span> np.<span class="bu">abs</span>(snap[<span class="st">"flow_pred"</span>] <span class="op">-</span> snap[<span class="st">"flow_true"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-32" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:463}}" data-outputid="3b76a674-d5cf-4587-ab7d-c75047eb81f3">
+<div id="cell-33" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:463}}" data-outputid="3b76a674-d5cf-4587-ab7d-c75047eb81f3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>vmin <span class="op">=</span> np.percentile(snap[<span class="st">"flow_true"</span>], <span class="dv">5</span>)</span>
@@ -861,7 +856,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 </ol>
 <p>These visualizations reveal spatial heterogeneity in both mobility patterns and model performance. They help identify when the model struggles, which regions tend to be more predictable, and how flow dynamics evolve over the day.</p>
-<div id="cell-35" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="5af24f16-c7ae-41ba-d277-6099a8e7c2c9">
+<div id="cell-36" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="5af24f16-c7ae-41ba-d277-6099a8e7c2c9">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>d0 <span class="op">=</span> <span class="dv">64</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>t_list <span class="op">=</span> [<span class="dv">8</span>, <span class="dv">12</span>, <span class="dv">16</span>, <span class="dv">20</span>, <span class="dv">24</span>, <span class="dv">28</span>]</span>
@@ -939,7 +934,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb17-75"><a href="#cb17-75" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-76"><a href="#cb17-76" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"usable time points"</span>, <span class="bu">len</span>(snap_list))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-36" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:788}}" data-outputid="dae2130c-2fad-4a07-d38e-e69819bfedbd">
+<div id="cell-37" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:788}}" data-outputid="dae2130c-2fad-4a07-d38e-e69819bfedbd">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>all_snap <span class="op">=</span> pd.concat(snap_list, ignore_index<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>vmin <span class="op">=</span> np.percentile(all_snap[<span class="st">"flow_true"</span>], <span class="dv">5</span>)</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>vmax <span class="op">=</span> np.percentile(all_snap[<span class="st">"flow_true"</span>], <span class="dv">95</span>)</span>
