@@ -166,9 +166,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="inspecting-the-base-table" class="level4">
 <h4 class="anchored" data-anchor-id="inspecting-the-base-table">1.1 Inspecting the base table</h4>
-<p>We begin by examining the DuckDB database to understand the structure of the input data. First, we list all available tables and confirm that the base table <code>flow_poi</code> is present. We then query the schema of <code>flow_poi</code> to obtain the names of all its columns.</p>
-<p>From these columns, we automatically select all fields whose names start with poi_. These poi_* columns describe the point-of-interest (POI) environment of each grid cell, for example the number of food, shopping, or entertainment locations nearby. Taken together, they form a POI feature vector: each element is the intensity of one POI category, giving a compact numerical representation of the local urban context.</p>
-<p>Finally, we define a consistent feature ordering for later use in NumPy and PyTorch. The feature list starts with the current <code>flow</code> value, followed by all <code>poi_*</code> columns, and ends with four time-encoding features that we will add next: <code>tod_sin</code>, <code>tod_cos</code>, <code>dow_sin</code>, and <code>dow_cos</code>.</p>
+<p>I first examine the DuckDB database to understand the structure of the input data. All available tables are listed to confirm that the base table flow_poi is present, and the schema of flow_poi is queried to obtain the full set of column names.</p>
+<p>From these columns, all fields whose names start with poi_ are selected automatically. These poi_* variables describe the point-of-interest (POI) environment of each grid cell—for example, counts of food, shopping, or entertainment locations nearby. Together they form a POI feature vector, where each element represents the intensity of a POI category and provides a compact numerical description of local urban context.</p>
+<p>A consistent feature ordering is then defined for later use in NumPy and PyTorch. The feature list begins with the current flow value, followed by all poi_* columns, and ends with four time-encoding features added in the next step: tod_sin, tod_cos, dow_sin, and dow_cos.</p>
 <div id="cell-5" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="c842b1f0-3ad8-4d61-a803-867e6ab14c66">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>info <span class="op">=</span> con.execute(<span class="st">"PRAGMA table_info('flow_poi');"</span>).fetchall()</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>all_cols <span class="op">=</span> [r[<span class="dv">1</span>] <span class="cf">for</span> r <span class="kw">in</span> info]</span>
@@ -181,22 +181,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="building-the-modeling-table-flow_feat" class="level4">
 <h4 class="anchored" data-anchor-id="building-the-modeling-table-flow_feat">1.2 Building the modeling table <code>flow_feat</code></h4>
-<p>Next, we construct a cleaned and feature-rich modeling table called <code>flow_feat</code> directly inside DuckDB. This table transforms the raw records from <code>flow_poi</code> into supervised learning examples that can be consumed by sequence models.</p>
-<p>The construction proceeds in two steps. In the first step, we:</p>
+<p>Next, a cleaned and feature-rich modeling table, <code>flow_feat</code>, is constructed directly inside DuckDB. This table transforms the raw records in <code>flow_poi</code> into supervised learning examples suitable for sequence models.</p>
+<p>Construction proceeds in two steps. In the first step:</p>
 <ul>
-<li>cast the day (<code>d</code>), time (<code>t</code>), and grid indices (<code>x</code>, <code>y</code>) to integers;</li>
-<li>replace missing values in all <code>poi_*</code> columns with 0, so that POI features are well-defined for every cell;</li>
-<li>define <code>time_of_day = t</code> as a half-hour index from 0 to 47;</li>
-<li>define <code>dow = d % 7</code> as a day-of-week index from 0 to 6;</li>
-<li>create a global <code>time_index = d * 48 + t</code> that flattens <code>(day, half-hour)</code> into a single time axis.</li>
+<li>the day (<code>d</code>), time (<code>t</code>), and grid indices (<code>x</code>, <code>y</code>) are cast to integers;</li>
+<li>missing values in all <code>poi_*</code> columns are replaced with 0, ensuring POI features are defined for every cell;</li>
+<li><code>time_of_day = t</code> is defined as a half-hour index from 0 to 47;</li>
+<li><code>dow = d % 7</code> is defined as a day-of-week index from 0 to 6;</li>
+<li>a global <code>time_index = d * 48 + t</code> is created to flatten <code>(day, half-hour)</code> into a single time axis.</li>
 </ul>
-<p>In the second step, we enrich each row with temporal encodings and a prediction target:</p>
+<p>In the second step, each row is enriched with temporal encodings and a prediction target:</p>
 <ul>
-<li>we compute sinusoidal encodings of time-of-day, <code>tod_sin</code> and <code>tod_cos</code>, to represent the 48 half-hour slots within a day as points on a circle;</li>
-<li>we compute sinusoidal encodings of day-of-week, <code>dow_sin</code> and <code>dow_cos</code>, to represent the weekly cycle;</li>
-<li>we define <code>flow_next</code> as the next half-hour flow for the same grid cell, using a window function over each <code>(x, y)</code> time series ordered by <code>(d, t)</code>.</li>
+<li>sinusoidal encodings of time-of-day (<code>tod_sin</code>, <code>tod_cos</code>) are computed to represent the 48 half-hour slots within a day on a circular scale;</li>
+<li>sinusoidal encodings of day-of-week (<code>dow_sin</code>, <code>dow_cos</code>) are computed to represent weekly periodicity;</li>
+<li><code>flow_next</code> is defined as the next half-hour flow for the same grid cell, using a window function over each <code>(x, y)</code> time series ordered by <code>(d, t)</code>.</li>
 </ul>
-<p>Finally, we select the grid indices (<code>x</code>, <code>y</code>), all model input features (<code>flow</code>, all <code>poi_*</code> columns, and the four time encodings), the target <code>flow_next</code>, and the global <code>time_index</code>. Rows where <code>flow_next</code> is missing (i.e., the last time step in a cell’s sequence) are dropped. The resulting <code>flow_feat</code> table is a clean, fully-specified dataset ready for temporal train/test splitting and sequence construction.</p>
+<p>Finally, the grid indices (<code>x</code>, <code>y</code>), all model input features (<code>flow</code>, all <code>poi_*</code> columns, and the four time encodings), the target <code>flow_next</code>, and the global <code>time_index</code> are selected. Rows with missing <code>flow_next</code> (i.e., the final time step in a cell’s sequence) are dropped. The resulting <code>flow_feat</code> table is a clean, fully specified dataset ready for temporal train/test splitting and sequence construction.</p>
 <div id="cell-8" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:66,&quot;referenced_widgets&quot;:[&quot;66a54dd5da574abe8fdbf9e1a411f04d&quot;,&quot;dc8e16af08dd497686bb86121677c2aa&quot;,&quot;a775d29f4fd94d979256b7422a7b9a07&quot;]}}" data-outputid="5d81e95a-ed73-499a-f2c6-a5e822ce3e43">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>feature_cols <span class="op">=</span> [<span class="st">"flow"</span>] <span class="op">+</span> poi_cols <span class="op">+</span> [<span class="st">"tod_sin"</span>, <span class="st">"tod_cos"</span>, <span class="st">"dow_sin"</span>, <span class="st">"dow_cos"</span>]</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -247,15 +247,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="traintest-split-and-feature-normalization" class="level3">
 <h3 class="anchored" data-anchor-id="traintest-split-and-feature-normalization">2. Train–test split and feature normalization</h3>
-<p>To prepare the data for modeling, we perform a temporal split on the feature table flow_feat. Because mobility patterns evolve over time, the model should be evaluated on future data rather than on randomly shuffled samples. We therefore split the dataset by the global time_index:</p>
+<p>To prepare the data for modeling, a temporal split is applied to the feature table <code>flow_feat</code>. Because mobility patterns evolve over time, evaluation should be performed on future periods rather than on randomly shuffled samples. The dataset is therefore split using the global <code>time_index</code>:</p>
 <ol type="1">
-<li>We compute the 80th percentile of time_index across all rows.</li>
-<li>Rows with time_index ≤ threshold form the training set (flow_feat_train).</li>
-<li>Rows with time_index &gt; threshold form the test set (flow_feat_test).</li>
+<li>the 80th percentile of <code>time_index</code> is computed across all rows;</li>
+<li>rows with <code>time_index</code> ≤ threshold form the training set (<code>flow_feat_train</code>);</li>
+<li>rows with <code>time_index</code> &gt; threshold form the test set (<code>flow_feat_test</code>).</li>
 </ol>
-<p>This ensures that the model is trained only on past observations and evaluated on genuinely later time periods.</p>
-<p>After splitting, we compute feature-wise means and standard deviations <strong>only on the training set</strong>. These statistics are collected for each model input feature in feature_cols. They are later used to apply z-score normalization to both training and test sequences. Computing normalization parameters solely from the training set avoids information leakage from the future into the model.</p>
-<p>The resulting arrays mean and std store the normalization parameters in a consistent order that matches the feature layout used by NumPy and PyTorch.</p>
+<p>This split trains the model on earlier observations and evaluates it on genuinely later time periods.</p>
+<p>After splitting, feature-wise means and standard deviations are computed <strong>only from the training set</strong>. These statistics are calculated for each model input feature in <code>feature_cols</code> and are later used to apply z-score normalization to both training and test sequences. Estimating normalization parameters from the training portion only avoids leaking information from the future into the model.</p>
+<p>The resulting arrays, <code>mean</code> and <code>std</code>, store normalization parameters in a fixed order consistent with the feature layout used by NumPy and PyTorch.</p>
 <div id="cell-12" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:139,&quot;referenced_widgets&quot;:[&quot;c3237904e88c495fb6b7a5cbc0eb8250&quot;,&quot;c65e99c1a08442bbac7f55982bfa2fce&quot;,&quot;c24fc8161f9d4cce9d68742e88fb3557&quot;,&quot;3167a68725e540f0af32f451355cfc6c&quot;,&quot;20cd043dda8e4005a3dca3dc9ba9f124&quot;,&quot;8a6a0dc81bfa434a881836b2573748c7&quot;,&quot;1e8904910b4c434092dbe95e446c6f61&quot;,&quot;c937d5ff2bbb45a797463a32bf209f93&quot;,&quot;16a0aa33eb94474da5adb27911544b02&quot;,&quot;db8c32a1000847a79632f36831d88430&quot;,&quot;edc51a08a0b74ae387c84b7822eb5ea2&quot;,&quot;08add841df264cdab83e0e1c339694ae&quot;]}}" data-outputid="c10773a1-bc64-45a6-e28f-9755e5a4059f">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 80% threshold</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
