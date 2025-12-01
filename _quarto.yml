@@ -5,5 +5,7 @@ project:
 format:
   html:
     theme: cosmo
-    toc: true          
-    toc-location: right  
+    toc: true
+    toc-location: right
+    code-fold: true
+    code-tools: true

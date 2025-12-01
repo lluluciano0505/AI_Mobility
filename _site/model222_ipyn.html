@@ -133,7 +133,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">LSTM Spatial Flow Prediction: True Values, Predictions, and Absolute Error</h1>
+<div class="quarto-title-block"><div><h1 class="title">LSTM Spatial Flow Prediction: True Values, Predictions, and Absolute Error</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li></ul></div></div>
 </div>
 
 
@@ -154,6 +154,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="data-and-feature-construction">1. Data and feature construction</h3>
 <p>We start from a DuckDB database <code>mobility.duckdb</code> stored in Google Drive.</p>
 <div id="cell-3" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:161}}" data-outputid="ac3aeb5d-dc0f-4724-d147-92e75b80c069">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> google.colab <span class="im">import</span> drive</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>drive.mount(<span class="st">'/content/drive'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -163,6 +165,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> duckdb.<span class="ex">connect</span>(<span class="st">"/content/drive/MyDrive/MOBILITY/mobility.duckdb"</span>)</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>con.execute(<span class="st">"SHOW TABLES;"</span>).fetchdf()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <section id="inspecting-the-base-table" class="level4">
 <h4 class="anchored" data-anchor-id="inspecting-the-base-table">1.1 Inspecting the base table</h4>
@@ -170,12 +173,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>From these columns, all fields whose names start with poi_ are selected automatically. These poi_* variables describe the point-of-interest (POI) environment of each grid cell—for example, counts of food, shopping, or entertainment locations nearby. Together they form a POI feature vector, where each element represents the intensity of a POI category and provides a compact numerical description of local urban context.</p>
 <p>A consistent feature ordering is then defined for later use in NumPy and PyTorch. The feature list begins with the current flow value, followed by all poi_* columns, and ends with four time-encoding features added in the next step: tod_sin, tod_cos, dow_sin, and dow_cos.</p>
 <div id="cell-5" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="c842b1f0-3ad8-4d61-a803-867e6ab14c66">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>info <span class="op">=</span> con.execute(<span class="st">"PRAGMA table_info('flow_poi');"</span>).fetchall()</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>all_cols <span class="op">=</span> [r[<span class="dv">1</span>] <span class="cf">for</span> r <span class="kw">in</span> info]</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>poi_cols <span class="op">=</span> [c <span class="cf">for</span> c <span class="kw">in</span> all_cols <span class="cf">if</span> c.startswith(<span class="st">"poi_"</span>)]</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"lens of POI"</span>, <span class="bu">len</span>(poi_cols))</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"5 poi:"</span>, poi_cols[:<span class="dv">5</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <p><img src="image/001.png" class="img-fluid"></p>
 </section>
@@ -198,6 +204,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 <p>Finally, the grid indices (<code>x</code>, <code>y</code>), all model input features (<code>flow</code>, all <code>poi_*</code> columns, and the four time encodings), the target <code>flow_next</code>, and the global <code>time_index</code> are selected. Rows with missing <code>flow_next</code> (i.e., the final time step in a cell’s sequence) are dropped. The resulting <code>flow_feat</code> table is a clean, fully specified dataset ready for temporal train/test splitting and sequence construction.</p>
 <div id="cell-8" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:66,&quot;referenced_widgets&quot;:[&quot;66a54dd5da574abe8fdbf9e1a411f04d&quot;,&quot;dc8e16af08dd497686bb86121677c2aa&quot;,&quot;a775d29f4fd94d979256b7422a7b9a07&quot;]}}" data-outputid="5d81e95a-ed73-499a-f2c6-a5e822ce3e43">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>feature_cols <span class="op">=</span> [<span class="st">"flow"</span>] <span class="op">+</span> poi_cols <span class="op">+</span> [<span class="st">"tod_sin"</span>, <span class="st">"tod_cos"</span>, <span class="st">"dow_sin"</span>, <span class="st">"dow_cos"</span>]</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>con.execute(<span class="ss">f"""</span></span>
@@ -237,10 +245,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="ss">    FROM feat</span></span>
 <span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="ss">    WHERE flow_next IS NOT NULL;</span></span>
 <span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="ss">"""</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <div id="cell-9" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="5958c191-e37e-4d84-b8c5-b6e7d007e3f8">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(con.execute(<span class="st">"SELECT COUNT(*) FROM flow_feat;"</span>).fetchall())</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(con.execute(<span class="st">"PRAGMA table_info('flow_feat');"</span>).fetchall()[:<span class="dv">15</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <p><img src="image/005.png" class="img-fluid"></p>
 </section>
@@ -257,6 +269,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>After splitting, feature-wise means and standard deviations are computed <strong>only from the training set</strong>. These statistics are calculated for each model input feature in <code>feature_cols</code> and are later used to apply z-score normalization to both training and test sequences. Estimating normalization parameters from the training portion only avoids leaking information from the future into the model.</p>
 <p>The resulting arrays, <code>mean</code> and <code>std</code>, store normalization parameters in a fixed order consistent with the feature layout used by NumPy and PyTorch.</p>
 <div id="cell-12" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:139,&quot;referenced_widgets&quot;:[&quot;c3237904e88c495fb6b7a5cbc0eb8250&quot;,&quot;c65e99c1a08442bbac7f55982bfa2fce&quot;,&quot;c24fc8161f9d4cce9d68742e88fb3557&quot;,&quot;3167a68725e540f0af32f451355cfc6c&quot;,&quot;20cd043dda8e4005a3dca3dc9ba9f124&quot;,&quot;8a6a0dc81bfa434a881836b2573748c7&quot;,&quot;1e8904910b4c434092dbe95e446c6f61&quot;,&quot;c937d5ff2bbb45a797463a32bf209f93&quot;,&quot;16a0aa33eb94474da5adb27911544b02&quot;,&quot;db8c32a1000847a79632f36831d88430&quot;,&quot;edc51a08a0b74ae387c84b7822eb5ea2&quot;,&quot;08add841df264cdab83e0e1c339694ae&quot;]}}" data-outputid="c10773a1-bc64-45a6-e28f-9755e5a4059f">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 80% threshold</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -289,6 +303,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>mean <span class="op">=</span> np.array([mean_row[c][<span class="dv">0</span>] <span class="cf">for</span> c <span class="kw">in</span> feature_cols], dtype<span class="op">=</span><span class="st">"float32"</span>)</span>
 <span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>std  <span class="op">=</span> np.array([std_row[c][<span class="dv">0</span>]  <span class="cf">for</span> c <span class="kw">in</span> feature_cols], dtype<span class="op">=</span><span class="st">"float32"</span>) <span class="op">+</span> <span class="fl">1e-6</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 </section>
 <section id="sequence-construction" class="level3">
@@ -298,6 +313,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>A fixed-length sliding window of size 8 is applied to each standardized cell-level time series, with window start positions at i=0,4,8,…, reflecting the chosen stride. Each window produces an input sequence consisting of eight consecutive half-hour records, and the prediction target is defined as the flow_next value associated with the final row in the window. Conceptually, each training example captures a 4-hour history and asks the model to predict the flow in the subsequent half-hour.</p>
 <p>All resulting examples are grouped into mini-batches of size 1024. Each batch tensor X_batch has shape [1024,8,feature_dim], containing 1024 standardized sequences of length 8. The corresponding target vector y_batch has shape [1024], holding the next-step flow values. Both the linear baseline model and the LSTM model consume the same batch format during training and evaluation, meaning that any performance differences arise solely from how the two architectures interpret the same sequence input.</p>
 <div id="cell-14" class="cell">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> nn</span>
@@ -358,6 +375,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">len</span>(X_buf) <span class="op">&gt;</span> <span class="dv">0</span>:</span>
 <span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> np.stack(X_buf), np.array(y_buf)</span>
 <span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 </section>
 <section id="models" class="level3">
@@ -370,6 +388,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The LSTM used here has: - batch-first input format, - a hidden size of 64, - two stacked recurrent layers, - and a final linear layer that maps the hidden representation into a scalar prediction.</p>
 <p>The model is trained end-to-end with the Adam optimizer and mean squared error as the loss function.</p>
 <div id="cell-17" class="cell">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> nn</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -408,6 +428,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        x_flat <span class="op">=</span> x.reshape(B, L <span class="op">*</span> F)  </span>
 <span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>        y_pred <span class="op">=</span> <span class="va">self</span>.fc(x_flat)       </span>
 <span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> y_pred.squeeze(<span class="op">-</span><span class="dv">1</span>)     </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 </section>
 <section id="linear-sequence-baseline" class="level4">
@@ -416,6 +437,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>This baseline has no notion of temporal order or temporal dependency. It can only learn a weighted combination of the raw features but cannot model how patterns evolve over time. As a result, it serves as a useful reference for evaluating whether the LSTM’s recurrent structure truly provides additional predictive power.</p>
 <p>Despite its simplicity, the linear model is fast to train and helps quantify the value of incorporating temporal dynamics into the prediction task.</p>
 <div id="cell-19" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="094f038d-6f2d-4c24-ecc4-47ee82d7df1c">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> torch.device(<span class="st">"cuda"</span> <span class="cf">if</span> torch.cuda.is_available() <span class="cf">else</span> <span class="st">"cpu"</span>)</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Device:"</span>, device)</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -446,8 +469,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> torch.optim.Adam(model.parameters(), lr<span class="op">=</span><span class="fl">1e-3</span>)</span>
 <span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <div id="cell-20" class="cell">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="at">@torch.no_grad</span>()</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> evaluate_mse_seq(table_name: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    model.<span class="bu">eval</span>()</span>
@@ -460,6 +486,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        sq_sum <span class="op">+=</span> ((pred <span class="op">-</span> yb) <span class="op">**</span> <span class="dv">2</span>).<span class="bu">sum</span>().item()</span>
 <span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>        n <span class="op">+=</span> <span class="bu">len</span>(yb)</span>
 <span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> sq_sum <span class="op">/</span> n</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 </section>
 </section>
@@ -471,6 +498,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The model consists of one linear layer nn.Linear(input_dim * seq_len, 1) that maps this flattened sequence to a single scalar prediction. Training uses the Adam optimizer with a learning rate of 1e-3 and mean squared error (MSE) as the loss function. For each epoch, the code iterates over all sequence batches generated from the flow_feat_train table, performs forward and backward passes, and updates the model parameters. The training loop also accumulates the sum of squared errors to compute the training MSE.</p>
 <p>After each epoch, the helper function evaluate_mse_linear is called on the flow_feat_test table to compute the test MSE using the same batching logic. This function runs the model in evaluation mode, iterates over all test batches, and returns the average squared error across all samples. Finally, the trained linear model weights are saved to flow_linear_seq_epoch8.pth as the linear baseline checkpoint.</p>
 <div id="cell-22" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="11dfb98f-78ad-49c3-a892-40ce212405b6">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> nn</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -573,6 +602,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb10-100"><a href="#cb10-100" aria-hidden="true" tabindex="-1"></a>    <span class="st">"/content/drive/MyDrive/MOBILITY/flow_linear_seq_epoch8.pth"</span></span>
 <span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Saved linear baseline model."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <p><img src="image/006.png" class="img-fluid"></p>
 </section>
@@ -583,6 +613,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The main training loop runs for EPOCHS = 8. For each epoch, the model is set to training mode, and batches are drawn from the flow_feat_train table using seq_batch_generator. For every batch, the code moves the data to the selected device (CPU or GPU), performs a forward pass through the LSTM, computes the MSE loss, backpropagates the gradients, and updates the parameters with the chosen optimizer. The loop accumulates the sum of squared errors to compute the epoch-level training MSE, and every 100 batches it prints a progress message.</p>
 <p>At the end of each epoch, evaluate_mse_seq is called on the flow_feat_test table to obtain the test MSE. The code then saves a checkpoint file under checkpoints_lstm/, containing the current epoch index, the model and optimizer state dictionaries, and the train/test MSE values. This allows intermediate models to be restored later if needed. After the final epoch, the model’s state dictionary is also saved separately to flow_lstm_final.pth as the final LSTM checkpoint.</p>
 <div id="cell-25" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="fdb640ff-5553-4940-9320-af3d1a706229">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># checkpoint</span></span>
@@ -662,6 +694,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a>final_path <span class="op">=</span> <span class="st">"/content/drive/MyDrive/MOBILITY/flow_lstm_final.pth"</span></span>
 <span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a>torch.save(model.state_dict(), final_path)</span>
 <span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Saved final model to </span><span class="sc">{</span>final_path<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <p><img src="image/007.png" class="img-fluid"></p>
 </section>
@@ -685,6 +718,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul></li>
 </ol>
 <div id="cell-28" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="22827492-36ff-4a93-ee67-21e047555b19">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>d0 <span class="op">=</span> <span class="dv">64</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
@@ -706,8 +741,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(window_df.head())</span>
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"records have ="</span>, <span class="bu">len</span>(window_df))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <div id="cell-29" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="0c33ada2-4767-42f9-b615-7cbb60f19c07">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -726,9 +764,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="ss">"""</span>, [d0, t_plot]).fetchdf()</span>
 <span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"cells at this time step:"</span>, <span class="bu">len</span>(snap_true))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <p><img src="image/004.png" class="img-fluid"></p>
 <div id="cell-31" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="8a220176-9fe2-434a-d196-35e427b6973d">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>X_list, target_list, x_list, y_list <span class="op">=</span> [], [], [], []</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> idx, row <span class="kw">in</span> snap_true.iterrows():</span>
@@ -771,8 +812,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
 <span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>    xb <span class="op">=</span> torch.from_numpy(X).to(device)     <span class="co"># [N, L, F]</span></span>
 <span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>    pred_arr <span class="op">=</span> model(xb).cpu().numpy()      <span class="co"># [N]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <div id="cell-32" class="cell">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>snap <span class="op">=</span> pd.DataFrame({</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"x"</span>: x_list,</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"y"</span>: y_list,</span>
@@ -780,8 +824,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"flow_pred"</span>: pred_arr,       <span class="co"># LSTM predicted next-step flow</span></span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>snap[<span class="st">"err_abs"</span>] <span class="op">=</span> np.<span class="bu">abs</span>(snap[<span class="st">"flow_pred"</span>] <span class="op">-</span> snap[<span class="st">"flow_true"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <div id="cell-33" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:463}}" data-outputid="3b76a674-d5cf-4587-ab7d-c75047eb81f3">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>vmin <span class="op">=</span> np.percentile(snap[<span class="st">"flow_true"</span>], <span class="dv">5</span>)</span>
@@ -844,6 +891,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb16-60"><a href="#cb16-60" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
 <span id="cb16-62"><a href="#cb16-62" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <p><img src="image/002.png" class="img-fluid"></p>
 <ol start="2" type="1">
@@ -857,6 +905,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ol>
 <p>These visualizations reveal spatial heterogeneity in both mobility patterns and model performance. They help identify when the model struggles, which regions tend to be more predictable, and how flow dynamics evolve over the day.</p>
 <div id="cell-36" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="5af24f16-c7ae-41ba-d277-6099a8e7c2c9">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>d0 <span class="op">=</span> <span class="dv">64</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>t_list <span class="op">=</span> [<span class="dv">8</span>, <span class="dv">12</span>, <span class="dv">16</span>, <span class="dv">20</span>, <span class="dv">24</span>, <span class="dv">28</span>]</span>
@@ -933,8 +983,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb17-74"><a href="#cb17-74" aria-hidden="true" tabindex="-1"></a>    snap_list.append(snap)</span>
 <span id="cb17-75"><a href="#cb17-75" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-76"><a href="#cb17-76" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"usable time points"</span>, <span class="bu">len</span>(snap_list))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <div id="cell-37" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:788}}" data-outputid="dae2130c-2fad-4a07-d38e-e69819bfedbd">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>all_snap <span class="op">=</span> pd.concat(snap_list, ignore_index<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>vmin <span class="op">=</span> np.percentile(all_snap[<span class="st">"flow_true"</span>], <span class="dv">5</span>)</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>vmax <span class="op">=</span> np.percentile(all_snap[<span class="st">"flow_true"</span>], <span class="dv">95</span>)</span>
@@ -1020,6 +1073,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb18-83"><a href="#cb18-83" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-84"><a href="#cb18-84" aria-hidden="true" tabindex="-1"></a>plt.suptitle(<span class="ss">f"Day </span><span class="sc">{</span>d0<span class="sc">}</span><span class="ss"> – 6 time steps: True / Pred / Error"</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
 <span id="cb18-85"><a href="#cb18-85" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
 </div>
 <p><img src="image/003.png" class="img-fluid"></p>
 </section>
@@ -1104,6 +1158,57 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         container: window.document.getElementById('quarto-embedded-source-code-modal')
       });
       clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
