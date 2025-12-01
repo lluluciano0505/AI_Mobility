@@ -135,7 +135,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#linear-baseline-model" id="toc-linear-baseline-model" class="nav-link" data-scroll-target="#linear-baseline-model">5.1 Linear baseline model</a></li>
   <li><a href="#lstm-training-and-checkpointing" id="toc-lstm-training-and-checkpointing" class="nav-link" data-scroll-target="#lstm-training-and-checkpointing">5.2 LSTM training and checkpointing</a></li>
   </ul></li>
-  <li><a href="#spatial-visualization" id="toc-spatial-visualization" class="nav-link" data-scroll-target="#spatial-visualization">6. Spatial visualization</a></li>
+  <li><a href="#spatial-visualization" id="toc-spatial-visualization" class="nav-link" data-scroll-target="#spatial-visualization">6. Spatial visualization</a>
+  <ul class="collapse">
+  <li><a href="#single-time-slice" id="toc-single-time-slice" class="nav-link" data-scroll-target="#single-time-slice">6.1 Single time slice</a></li>
+  <li><a href="#multiple-time-slices" id="toc-multiple-time-slices" class="nav-link" data-scroll-target="#multiple-time-slices">6.2 Multiple time slices</a></li>
+  </ul></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">7. Conclusion</a></li>
   </ul>
 </nav>
@@ -692,22 +696,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="spatial-visualization" class="level2">
 <h2 class="anchored" data-anchor-id="spatial-visualization">6. Spatial visualization</h2>
-<p>To understand where and when the models perform well, we visualize predictions across the spatial grid. The idea is to fix a specific day and one or more time-of-day slots, reconstruct the historical sequences for each grid cell at those times, run the trained model, and compare its predictions with the true flows.</p>
-<p>The visualization works in two modes:</p>
-<ol type="1">
-<li><strong>Single time slice</strong>
+<p>To see where (and when) the model performs well, I visualize predictions across the grid for a day 64 at time slot t=21 (randomly choosed). For this time point, I reconstruct the required history sequence for each grid cell, run the trained model to predict the next-step flow, and compare predictions against the observed values.</p>
+<p>The visualization is produced in two modes:</p>
+<section id="single-time-slice" class="level3">
+<h3 class="anchored" data-anchor-id="single-time-slice">6.1 Single time slice</h3>
 <ul>
-<li>Choose a day and an eight-step window within that day.</li>
-<li>For the final time step of the window, identify all grid cells that have a valid next-step flow.</li>
-<li>For each of these cells, retrieve the preceding <code>SEQ_LEN</code> records to form a complete history.</li>
-<li>After running the model, create a spatial plot showing:
-<ul>
-<li>the true next-step flow,</li>
-<li>the model’s predicted flow,</li>
-<li>and the absolute error.</li>
-</ul></li>
-</ul></li>
-</ol>
+<li><p>Identify all grid cells that have a valid next-step target at this time point (i.e., flow_next is available).</p></li>
+<li><p>For each such cell, retrieve the preceding SEQ_LEN records to form its complete input history.</p></li>
+<li><p>Run the model and map three spatial surfaces: true next-step flow, predicted next-step flow, absolute error.</p></li>
+</ul>
 <div id="cell-26" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="22827492-36ff-4a93-ee67-21e047555b19">
 <details class="code-fold">
 <summary>Code</summary>
@@ -878,16 +875,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </details>
 </div>
 <p><img src="image/002.png" class="img-fluid"></p>
-<ol start="2" type="1">
-<li><strong>Multiple time slices</strong>
+</section>
+<section id="multiple-time-slices" class="level3">
+<h3 class="anchored" data-anchor-id="multiple-time-slices">6.2 Multiple time slices</h3>
+<p>Select several time slots on the same day.</p>
 <ul>
-<li>Select several time-of-day indices on the same day.</li>
-<li>Repeat the above process for each time, stacking the resulting maps side-by-side.</li>
-<li>The first row displays true flows, the second row shows predictions, and the third row shows absolute errors.</li>
-<li>Shared color scales allow visual comparison across time.</li>
-</ul></li>
-</ol>
-<p>These visualizations reveal spatial heterogeneity in both mobility patterns and model performance. They help identify when the model struggles, which regions tend to be more predictable, and how flow dynamics evolve over the day.</p>
+<li><p>For each time slot, repeat the single-slice procedure: build SEQ_LEN histories per cell, predict the next-step flow, and compute errors.</p></li>
+<li><p>Stack the resulting maps in a grid: the first row shows true flows, the second row shows predictions, and the third row shows absolute errors.</p></li>
+<li><p>Use shared color scales within each row so patterns can be compared consistently across times.</p></li>
+</ul>
+<p>These maps highlight spatial heterogeneity in both mobility intensity and predictive performance. They make it easy to spot when the model breaks down, which areas are consistently more predictable, and how flow patterns shift over the course of the day.</p>
 <div id="cell-33" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;}}" data-outputid="5af24f16-c7ae-41ba-d277-6099a8e7c2c9">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1060,6 +1057,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </details>
 </div>
 <p><img src="image/003.png" class="img-fluid"></p>
+</section>
 </section>
 <section id="conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="conclusion">7. Conclusion</h2>
