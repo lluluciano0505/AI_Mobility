@@ -169,7 +169,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="data-and-feature-construction" class="level2">
 <h2 class="anchored" data-anchor-id="data-and-feature-construction">1. Data and feature construction</h2>
 <p>We start from a DuckDB database <code>mobility.duckdb</code> stored in Google Drive.</p>
-<div id="cell-3" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;colab&quot;,&quot;value&quot;:{&quot;base_uri&quot;:&quot;https://localhost:8080/&quot;,&quot;height&quot;:161}}" data-outputid="ac3aeb5d-dc0f-4724-d147-92e75b80c069">
+<p>YJMob100K is an open-source, anonymized, metropolitan-scale human mobility dataset derived from mobile phone location data (Yahoo Japan / LY Corporation). To protect privacy, both space and time are discretized: locations are mapped onto a 500 m × 500 m grid and timestamps are binned into 30-minute intervals; the actual city and absolute dates are not disclosed, and records are indexed using day and time-slot identifiers instead. Nature</p>
+<p>In addition to mobility traces, the release provides static, cell-level context via a POI-category count vector (about 85 dimensions) for each grid cell, enabling models to combine dynamic mobility signals with local urban context. In this notebook, we operate on an aggregated table (flow_poi) that summarizes the discretized trajectories into half-hour, grid-level flows and joins them with the POI vectors, producing a spatiotemporal grid time series suitable for next-step flow prediction.</p>
+<div id="cell-3" class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> google.colab <span class="im">import</span> drive</span>
