@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-p = Path('model222_ipyn.ipynb')
+p = Path('ai_mobility_flow_prediction.ipynb')
 nb = json.loads(p.read_text(encoding='utf-8'))
 changed = False
 for cell in nb.get('cells', []):
